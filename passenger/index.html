@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransitGo - Passenger Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @media (max-width: 640px) {
+            .container { padding: 1rem; }
+        }
+        
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            pointer-events: auto;
+            animation: slideIn 0.3s ease-out;
+        }
+        .toast.success {
+            background-color: #10b981;
+            color: white;
+            border-left: 4px solid #059669;
+        }
+        .toast.error {
+            background-color: #ef4444;
+            color: white;
+            border-left: 4px solid #dc2626;
+        }
+        .toast.info {
+            background-color: #3b82f6;
+            color: white;
+            border-left: 4px solid #2563eb;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        .toast.removing {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-600 p-4 text-white shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i data-lucide="bus" class="w-8 h-8"></i>
+                <span class="text-xl font-bold tracking-tight">TransitGo</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="user-info" class="hidden flex items-center space-x-2">
+                    <span id="user-name" class="text-sm font-bold opacity-90"></span>
+                    <button onclick="logoutPassenger()" class="p-2 hover:bg-blue-700 rounded-lg transition-colors" title="Logout">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <button id="login-trigger" onclick="openAuthModal()" class="px-4 py-2 bg-white text-blue-600 rounded-xl text-sm font-bold shadow-sm hover:bg-blue-50 transition-all">
+                    Sign In
+                </button>
+                <span class="text-[10px] uppercase tracking-widest font-bold opacity-60 hidden sm:inline">Passenger Portal v2</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="auth-title" class="text-2xl font-black text-slate-800">Sign In</h3>
+                <button onclick="closeAuthModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="auth-form" class="space-y-4">
+                <div id="reg-fields" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
+                        <input type="text" id="reg-name" placeholder="Juan Dela Cruz"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Phone Number</label>
+                        <input type="tel" id="reg-phone" placeholder="09123456789"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
+                    <input type="email" id="auth-email" placeholder="juan@example.com" required
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
+                </div>
+                
+                <div id="auth-error" class="hidden text-xs font-bold text-red-500 bg-red-50 p-3 rounded-lg border border-red-100"></div>
+
+                <button type="submit" id="auth-submit" class="w-full py-4 bg-blue-600 text-white font-black rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest text-sm">
+                    Sign In
+                </button>
+                
+                <p class="text-center text-xs text-slate-400 mt-4">
+                    <span id="auth-toggle-text">Don't have an account?</span>
+                    <button type="button" onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-blue-600 font-bold hover:underline ml-1">Register Now</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <main class="container mx-auto py-8 px-4 max-w-2xl">
+        <!-- Search Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-6 flex items-center space-x-2">
+                <i data-lucide="search" class="w-5 h-5 text-blue-500"></i>
+                <span>Find Your Trip</span>
+            </h2>
+            
+            <form id="search-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-2">From</label>
+                        <select id="origin" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 transition-all" required>
+                            <option value="">-- Select Origin --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-2">To</label>
+                        <select id="destination" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 transition-all" required>
+                            <option value="">-- Select Destination --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-[0.98] transition-all">
+                    Search Buses
+                </button>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-container" class="space-y-4 hidden">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Available Schedules</h3>
+            <div id="schedules-list" class="space-y-4">
+                <!-- Schedules will be injected here -->
+            </div>
+        </div>
+
+        <!-- Empty State / Errors -->
+        <div id="status-message" class="hidden text-center py-12">
+            <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+                <i id="status-icon" data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                <p id="status-text" class="text-gray-500 font-medium"></p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Booking -->
+    <div id="booking-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Complete Booking</h3>
+                <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="booking-form" class="space-y-4">
+                <input type="hidden" id="selected-schedule-id">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-2">Full Name</label>
+                    <input type="text" id="passenger-name" placeholder="Juan Dela Cruz" required
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-2">Email</label>
+                    <input type="email" id="passenger-email" placeholder="juan@example.com"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-2">Phone</label>
+                    <input type="tel" id="passenger-phone" placeholder="+63 9XX XXX XXXX"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-2">Seat Number</label>
+                    <input type="number" id="seat-number" min="1" placeholder="14" required
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500">
+                </div>
+                
+                <div id="booking-error" class="hidden text-xs font-bold text-red-500 bg-red-50 p-3 rounded-lg border border-red-100">
+                    <!-- Error messages injected here -->
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg shadow-green-200 hover:bg-green-700 transition-all">
+                    Confirm Reservation
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ===== TOAST NOTIFICATION SYSTEM =====
+        function showToast(message, type = 'success', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = '✓';
+            if (type === 'error') icon = '✕';
+            if (type === 'info') icon = 'ℹ';
+            
+            toast.innerHTML = `
+                <span style="font-size: 18px;">${icon}</span>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        const searchForm = document.getElementById('search-form');
+        const resultsContainer = document.getElementById('results-container');
+        const schedulesList = document.getElementById('schedules-list');
+        const statusMessage = document.getElementById('status-message');
+        const statusText = document.getElementById('status-text');
+        const bookingModal = document.getElementById('booking-modal');
+        const bookingForm = document.getElementById('booking-form');
+
+        // Auth variables
+        let isRegisterMode = false;
+        const authModal = document.getElementById('auth-modal');
+        const authForm = document.getElementById('auth-form');
+        const authTitle = document.getElementById('auth-title');
+        const authSubmit = document.getElementById('auth-submit');
+        const regFields = document.getElementById('reg-fields');
+        const authToggleText = document.getElementById('auth-toggle-text');
+        const authToggleBtn = document.getElementById('auth-toggle-btn');
+        const authError = document.getElementById('auth-error');
+
+        // Auth functions
+        function openAuthModal() {
+            authModal.classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            authModal.classList.add('hidden');
+            authForm.reset();
+            authError.classList.add('hidden');
+        }
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            authTitle.textContent = isRegisterMode ? 'Create Account' : 'Sign In';
+            authSubmit.textContent = isRegisterMode ? 'Register' : 'Sign In';
+            authToggleText.textContent = isRegisterMode ? 'Already have an account?' : "Don't have an account?";
+            authToggleBtn.textContent = isRegisterMode ? 'Sign In' : 'Register Now';
+            regFields.classList.toggle('hidden', !isRegisterMode);
+            
+            // Toggle requirements
+            document.getElementById('reg-name').required = isRegisterMode;
+            authError.classList.add('hidden');
+        }
+
+        async function checkPassengerAuth() {
+            try {
+                const res = await fetch('../api/passenger_auth.php?action=check');
+                const data = await res.json();
+                if (data.authenticated) {
+                    showUserInfo(data.user);
+                }
+            } catch (e) {}
+        }
+
+        function showUserInfo(user) {
+            document.getElementById('login-trigger').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('user-name').textContent = user.name;
+            
+            // Auto-fill booking form
+            document.getElementById('passenger-name').value = user.name;
+            document.getElementById('passenger-email').value = user.email;
+        }
+
+        async function logoutPassenger() {
+            await fetch('../api/passenger_auth.php?action=logout');
+            location.reload();
+        }
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const action = isRegisterMode ? 'register' : 'login';
+            
+            const body = { email };
+            if (isRegisterMode) {
+                body.name = document.getElementById('reg-name').value;
+                body.phone = document.getElementById('reg-phone').value;
+            }
+
+            authSubmit.disabled = true;
+            authSubmit.textContent = isRegisterMode ? 'Registering...' : 'Signing In...';
+            authError.classList.add('hidden');
+
+            try {
+                const res = await fetch(`../api/passenger_auth.php?action=${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                
+                if (data.authenticated) {
+                    showToast(isRegisterMode ? 'Account created successfully!' : 'Successfully logged in!', 'success', 2000);
+                    closeAuthModal();
+                    showUserInfo(data.user);
+                } else {
+                    authError.textContent = data.error || 'Authentication failed';
+                    authError.classList.remove('hidden');
+                }
+            } catch (e) {
+                authError.textContent = 'Network error: ' + e.message;
+                authError.classList.remove('hidden');
+            } finally {
+                authSubmit.disabled = false;
+                authSubmit.textContent = isRegisterMode ? 'Register' : 'Sign In';
+            }
+        });
+
+        // Initial check
+        checkPassengerAuth();
+
+        // Populate dropdowns from available routes
+        async function populateDropdowns() {
+            try {
+                const response = await fetch('../api/get_routes.php');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const originSelect = document.getElementById('origin');
+                    const destinationSelect = document.getElementById('destination');
+                    
+                    originSelect.innerHTML = '<option value="">-- Select Origin --</option>';
+                    destinationSelect.innerHTML = '<option value="">-- Select Destination --</option>';
+                    
+                    const allLocations = [...new Set([...result.data.origins, ...result.data.destinations])].sort();
+                    
+                    allLocations.forEach(loc => {
+                        const opt1 = document.createElement('option');
+                        opt1.value = loc;
+                        opt1.text = loc;
+                        const opt2 = document.createElement('option');
+                        opt2.value = loc;
+                        opt2.text = loc;
+                        
+                        originSelect.appendChild(opt1);
+                        destinationSelect.appendChild(opt2);
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading routes:", error);
+                statusText.innerText = "Failed to load routes. Please refresh.";
+            }
+        }
+
+        populateDropdowns();
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+
+            if(!origin || !destination) {
+                statusText.innerText = "Please select both origin and destination";
+                statusMessage.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                return;
+            }
+
+            if(origin === destination) {
+                statusText.innerText = "Origin and destination cannot be the same";
+                statusMessage.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                return;
+            }
+
+            resultsContainer.classList.add('hidden');
+            statusMessage.classList.remove('hidden');
+            statusText.innerText = "🔍 Searching for available buses...";
+
+            try {
+                const response = await fetch(`../api/get_schedules.php?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
+                const data = await response.json();
+
+                if (response.ok && data.data && data.data.length > 0) {
+                    statusMessage.classList.add('hidden');
+                    resultsContainer.classList.remove('hidden');
+                    renderSchedules(data.data);
+                } else {
+                    statusText.innerText = data.error || "No buses available for this route";
+                    resultsContainer.classList.add('hidden');
+                }
+            } catch (error) {
+                statusText.innerText = "❌ " + error.message;
+                resultsContainer.classList.add('hidden');
+            }
+        });
+
+        function renderSchedules(schedules) {
+            schedulesList.innerHTML = schedules.map(s => {
+                const available = parseInt(s.capacity) - parseInt(s.booked_seats || 0);
+                const isFull = available <= 0;
+                return `
+                    <div class="bg-white p-6 rounded-2xl border ${isFull ? 'border-red-200 opacity-60' : 'border-gray-100'} shadow-sm ${!isFull ? 'hover:border-blue-200' : ''} transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 px-2 py-1 rounded-md">${s.bus_type}</span>
+                                <h4 class="text-xl font-bold text-gray-800 mt-2">${s.bus_number}</h4>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-gray-400 uppercase font-bold block">Fare</span>
+                                <span class="text-lg font-black text-gray-800">₱${parseFloat(s.fare).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 mb-6 text-gray-500 text-sm">
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="calendar" class="w-4 h-4 mb-1"></i>
+                                <span class="text-xs">${new Date(s.departure_time).toLocaleDateString()}</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="clock" class="w-4 h-4 mb-1"></i>
+                                <span class="text-xs">${new Date(s.departure_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="users" class="w-4 h-4 mb-1"></i>
+                                <span class="text-xs">${available} Seats</span>
+                            </div>
+                        </div>
+
+                        ${isFull ? 
+                            `<button class="w-full py-3 bg-gray-300 text-gray-600 font-bold rounded-xl cursor-not-allowed" disabled>FULLY BOOKED</button>` :
+                            `<button onclick="openBooking(${s.id})" class="w-full py-3 border-2 border-blue-600 text-blue-600 font-bold rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">Select Seat</button>`
+                        }
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openBooking(scheduleId) {
+            // Check if user is logged in first
+            const loginTrigger = document.getElementById('login-trigger');
+            if (!loginTrigger.classList.contains('hidden')) {
+                alert('Please sign in or create an account to book a ticket.');
+                openAuthModal();
+                return;
+            }
+            
+            document.getElementById('selected-schedule-id').value = scheduleId;
+            document.getElementById('booking-error').classList.add('hidden');
+            // Form is auto-filled by showUserInfo()
+            bookingModal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            bookingModal.classList.add('hidden');
+            document.getElementById('booking-error').classList.add('hidden');
+        }
+
+        bookingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const scheduleId = parseInt(document.getElementById('selected-schedule-id').value);
+            const name = document.getElementById('passenger-name').value.trim();
+            const email = document.getElementById('passenger-email').value.trim();
+            const phone = document.getElementById('passenger-phone').value.trim();
+            const seat = parseInt(document.getElementById('seat-number').value);
+            const errorDiv = document.getElementById('booking-error');
+
+            if(!name || !seat) {
+                errorDiv.innerText = "Name and seat number are required.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Show processing
+            const submitBtn = bookingForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Processing...";
+
+            try {
+                // Step 1: Create or get passenger
+                const passengerRes = await fetch('../api/create_passenger.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone })
+                });
+
+                if (!passengerRes.ok) {
+                    throw new Error("Failed to register passenger");
+                }
+
+                const passengerData = await passengerRes.json();
+                const passengerId = passengerData.id;
+
+                // Step 2: Book ticket
+                const bookingRes = await fetch('../api/book_ticket.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        passenger_id: passengerId,
+                        schedule_id: scheduleId,
+                        seat_number: seat
+                    })
+                });
+
+                const bookingResult = await bookingRes.json();
+
+                if (bookingRes.status === 201) {
+                    const tripCode = bookingResult.ticket.trip_code || 'N/A';
+                    showToast(`Successfully booked! Trip Code: ${tripCode}`, 'success', 4000);
+                    closeModal();
+                    document.getElementById('search-form').reset();
+                } else if (bookingRes.status === 409) {
+                    errorDiv.innerText = "❌ " + (bookingResult.error || "Seat is already taken");
+                    errorDiv.classList.remove('hidden');
+                } else {
+                    throw new Error(bookingResult.error || "Booking failed");
+                }
+            } catch (error) {
+                errorDiv.innerText = "❌ " + error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Confirm Reservation";
+            }
+        });
+    </script>
+</body>
+</html>

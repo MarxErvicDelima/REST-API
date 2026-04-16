@@ -1,0 +1,26 @@
+# Build artifacts
+cpp_client/build/
+*.o
+*.so
+*.a
+*.out
+
+# IDE & System
+.vscode/
+.DS_Store
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# Compiled binaries
+transit_client
+
+# OS files
+Thumbs.db
+.env.local
+*.log
+
+# Node modules (if any)
+node_modules/
+package-lock.json
