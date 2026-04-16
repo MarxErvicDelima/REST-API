@@ -16,9 +16,13 @@ cpp_client/build/
 # Compiled binaries
 transit_client
 
+# Environment variables (never commit credentials)
+.env
+.env.local
+.env.*.local
+
 # OS files
 Thumbs.db
-.env.local
 *.log
 
 # Node modules (if any)

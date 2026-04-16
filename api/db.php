@@ -1,18 +1,21 @@
 <?php
 // /adet/api/db.php
-// Extremely robust database connection for ByetHost
+// Database connection with environment variable support
 
-// LOCAL DEVELOPMENT - Using local XAMPP MySQL
-$host = 'localhost';
-$db   = 'transit_system';
-$user = 'root';
-$pass = '';
+// Load environment variables from .env file
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $env = parse_ini_file($envFile);
+} else {
+    // Fallback to defaults if .env doesn't exist
+    $env = [];
+}
 
-// BYETHOST PRODUCTION - Uncomment below to use remote server
-// $host = 'sql100.byethost33.com';
-// $db   = 'b33_41637866_TRANSITGO';
-// $user = 'b33_41637866';
-// $pass = 'ADMIN123';
+// Get database credentials from environment or use defaults
+$host = $env['DB_HOST'] ?? 'localhost';
+$db   = $env['DB_NAME'] ?? 'transit_system';
+$user = $env['DB_USER'] ?? 'root';
+$pass = $env['DB_PASS'] ?? '';
 
 $charset = 'utf8mb4';
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset;timeout=5";
