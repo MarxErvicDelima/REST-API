@@ -504,16 +504,6 @@
         
         async function checkAuthentication() {
             try {
-                // Check if we are using the hardcoded session bypass
-                if(localStorage.getItem('admin_session') === 'active') {
-                    document.getElementById('admin-name-display').textContent = "Admin User";
-                    document.getElementById('logout-btn').classList.remove('hidden');
-                    document.getElementById('login-redirect-btn').classList.add('hidden');
-                    document.getElementById('login-overlay').classList.add('hidden');
-                    loadDashboardData();
-                    return;
-                }
-
                 const response = await fetch('../api/admin_auth.php?action=check');
                 if (!response.ok) {
                     console.error('Auth check failed:', response.status);
@@ -575,14 +565,7 @@
             errorDiv.classList.add('hidden');
 
             try {
-                // ✅ HARDCODED LOGIN FIX
-                if ((username === 'admin' && password === 'admin123') || (username === 'manager' && password === 'manager123')) {
-                    localStorage.setItem('admin_session', 'active');
-                    window.location.reload();
-                    return;
-                }
-
-                // Existing API login
+                // Call the API to authenticate
                 const response = await fetch('../api/admin_auth.php?action=login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -610,7 +593,6 @@
         async function logoutAdmin() {
             if (!confirm('Are you sure you want to logout?')) return;
             try {
-                localStorage.removeItem('admin_session');
                 await fetch('../api/admin_auth.php?action=logout');
                 window.location.reload();
             } catch (e) {

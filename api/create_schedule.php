@@ -57,10 +57,10 @@ switch($method) {
             ");
         }
         
-        sendJsonResponse([
+        sendJsonResponse(200, [
             "status" => "success",
             "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)
-        ], 200);
+        ]);
         break;
 
     case 'POST':
@@ -68,7 +68,7 @@ switch($method) {
         $data = json_decode(file_get_contents('php://input'), true);
         
         if (!isset($data['bus_route_id'], $data['departure_time'], $data['arrival_time'], $data['fare'])) {
-            sendJsonResponse(["error" => "Missing parameters: bus_route_id, departure_time, arrival_time, fare"], 400);
+            sendJsonResponse(400, ["error" => "Missing parameters: bus_route_id, departure_time, arrival_time, fare"]);
             return;
         }
         
@@ -78,13 +78,13 @@ switch($method) {
             $checkStmt->execute([$data['bus_route_id']]);
             
             if ($checkStmt->rowCount() === 0) {
-                sendJsonResponse(["error" => "Invalid bus_route_id"], 400);
+                sendJsonResponse(400, ["error" => "Invalid bus_route_id"]);
                 return;
             }
             
             // Validate times
             if (strtotime($data['arrival_time']) <= strtotime($data['departure_time'])) {
-                sendJsonResponse(["error" => "Arrival time must be after departure time"], 400);
+                sendJsonResponse(400, ["error" => "Arrival time must be after departure time"]);
                 return;
             }
             
@@ -102,13 +102,13 @@ switch($method) {
             
             $scheduleId = $pdo->lastInsertId();
             
-            sendJsonResponse([
+            sendJsonResponse(201, [
                 "status" => "success",
                 "message" => "Schedule created successfully",
                 "id" => $scheduleId
-            ], 201);
+            ]);
         } catch (PDOException $e) {
-            sendJsonResponse(["error" => "Database error: " . $e->getMessage()], 500);
+            sendJsonResponse(500, ["error" => "Database error: " . $e->getMessage()]);
         }
         break;
 
@@ -116,7 +116,7 @@ switch($method) {
         // Delete a schedule
         $scheduleId = $_GET['id'] ?? null;
         if (!$scheduleId) {
-            sendJsonResponse(["error" => "Missing schedule ID"], 400);
+            sendJsonResponse(400, ["error" => "Missing schedule ID"]);
             return;
         }
         
@@ -127,7 +127,7 @@ switch($method) {
             $result = $checkStmt->fetch(PDO::FETCH_ASSOC);
             
             if ($result['count'] > 0) {
-                sendJsonResponse(["error" => "Cannot delete schedule with existing bookings"], 400);
+                sendJsonResponse(400, ["error" => "Cannot delete schedule with existing bookings"]);
                 return;
             }
             
@@ -135,16 +135,16 @@ switch($method) {
             $stmt = $pdo->prepare("DELETE FROM schedules WHERE id = ?");
             $stmt->execute([$scheduleId]);
             
-            sendJsonResponse([
+            sendJsonResponse(200, [
                 "status" => "success",
                 "message" => "Schedule deleted successfully"
-            ], 200);
+            ]);
         } catch (PDOException $e) {
-            sendJsonResponse(["error" => "Database error: " . $e->getMessage()], 500);
+            sendJsonResponse(500, ["error" => "Database error: " . $e->getMessage()]);
         }
         break;
         
     default:
-        sendJsonResponse(["error" => "Method not allowed"], 405);
+        sendJsonResponse(405, ["error" => "Method not allowed"]);
 }
 ?>

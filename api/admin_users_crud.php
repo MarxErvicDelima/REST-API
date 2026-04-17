@@ -60,11 +60,14 @@ switch($action) {
                 sendJsonResponse(409, ['error' => 'Username or email already exists']);
             }
 
-            // For now, store password as-is (in production: use bcrypt)
+            // Hash the password using bcrypt
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+            
+            // For now, store as-is for backward compatibility (ideally hash it)
             $sql = "INSERT INTO admin_users (username, email, password_hash, full_name, status) 
                     VALUES (?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$username, $email, $password, $full_name, $status]);
+            $stmt->execute([$username, $email, $passwordHash, $full_name, $status]);
 
             sendJsonResponse(201, [
                 'status' => 'success',
@@ -95,11 +98,14 @@ switch($action) {
 
         try {
             if ($password) {
+                // Hash the password using bcrypt if provided
+                $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+                
                 // Update with new password
                 $sql = "UPDATE admin_users SET email = ?, full_name = ?, status = ?, password_hash = ?, updated_at = NOW() 
                         WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([$email, $full_name, $status, $password, $id]);
+                $stmt->execute([$email, $full_name, $status, $passwordHash, $id]);
             } else {
                 // Update without changing password
                 $sql = "UPDATE admin_users SET email = ?, full_name = ?, status = ?, updated_at = NOW() 

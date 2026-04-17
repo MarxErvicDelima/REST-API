@@ -22,11 +22,26 @@ switch($action) {
             $stmt->execute([$username]);
             $admin = $stmt->fetch();
 
-            if ($admin && $password === $admin['password_hash']) {
-                $_SESSION['admin_id'] = $admin['id'];
-                $_SESSION['admin_username'] = $admin['username'];
-                $_SESSION['admin_name'] = $admin['full_name'];
-                sendJsonResponse(200, ['authenticated' => true, 'user' => $admin]);
+            if ($admin) {
+                // Support both plain-text (legacy) and hashed passwords for backward compatibility
+                $passwordValid = false;
+                
+                // Check if password is bcrypt hash (starts with $2)
+                if (strpos($admin['password_hash'], '$2') === 0) {
+                    $passwordValid = password_verify($password, $admin['password_hash']);
+                } else {
+                    // Fallback to plain text for legacy data
+                    $passwordValid = ($password === $admin['password_hash']);
+                }
+                
+                if ($passwordValid) {
+                    $_SESSION['admin_id'] = $admin['id'];
+                    $_SESSION['admin_username'] = $admin['username'];
+                    $_SESSION['admin_name'] = $admin['full_name'];
+                    sendJsonResponse(200, ['authenticated' => true, 'user' => $admin]);
+                } else {
+                    sendJsonResponse(401, ['authenticated' => false, 'error' => 'Invalid credentials']);
+                }
             } else {
                 sendJsonResponse(401, ['authenticated' => false, 'error' => 'Invalid credentials']);
             }
