@@ -25,18 +25,26 @@ USE transit_system;
 -- ========================================================
 -- DROP EXISTING TABLES (in correct order)
 -- IMPORTANT: Drop dependent tables FIRST, parent tables LAST
+-- This ensures no foreign key constraint violations
 -- ========================================================
-SET FOREIGN_KEY_CHECKS = 0;  -- Temporarily disable foreign key checks
+SET FOREIGN_KEY_CHECKS = 0;  -- Disable ALL foreign key checks
 
-DROP TABLE IF EXISTS tickets;           -- Depends on schedules, passengers
-DROP TABLE IF EXISTS schedules;         -- Depends on scheduled_trips
-DROP TABLE IF EXISTS scheduled_trips;   -- New consolidated table (replaces bus_routes + routes merge)
-DROP TABLE IF EXISTS buses;             -- Legacy - data now in scheduled_trips
-DROP TABLE IF EXISTS routes;            -- Legacy - data now in scheduled_trips
-DROP TABLE IF EXISTS bus_routes;        -- Legacy - data now in scheduled_trips
-DROP TABLE IF EXISTS passengers;        -- Independent
-DROP TABLE IF EXISTS admin_users;       -- Independent
+-- Drop tables in correct dependency order
+-- CHILDREN first (tables with FKs pointing outward)
+DROP TABLE IF EXISTS tickets;           -- Child of schedules, passengers
+DROP TABLE IF EXISTS schedules;         -- Child of scheduled_trips
 
+-- LEGACY TABLES (from old architecture - must be explicitly dropped)
+DROP TABLE IF EXISTS bus_routes;        -- Legacy junction table (had FKs to buses, routes)
+DROP TABLE IF EXISTS buses;             -- Legacy parent table
+
+-- PARENT TABLES (independent or only referenced by children we dropped)
+DROP TABLE IF EXISTS scheduled_trips;   -- New consolidated table
+DROP TABLE IF EXISTS routes;            -- Legacy parent table
+DROP TABLE IF EXISTS passengers;        -- Independent table
+DROP TABLE IF EXISTS admin_users;       -- Independent table
+
+-- NOW re-enable foreign key checks for new table creation
 SET FOREIGN_KEY_CHECKS = 1;  -- Re-enable foreign key checks
 
 -- ========================================================
