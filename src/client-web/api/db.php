@@ -3,7 +3,8 @@
 // Database connection with environment variable support
 
 // Load environment variables from .env file
-$envFile = __DIR__ . '/.env';
+// .env should be in the project root (2 levels up from api/)
+$envFile = realpath(__DIR__ . '/../../..') . '/.env';
 if (file_exists($envFile)) {
     $env = parse_ini_file($envFile);
 } else {
