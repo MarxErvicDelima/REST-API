@@ -1,5 +1,5 @@
 <?php
-// /adet/api/manage_admin_users.php
+// src/client-web/api/manage_admin_users.php
 // Admin user management (create, update, delete)
 
 session_start();

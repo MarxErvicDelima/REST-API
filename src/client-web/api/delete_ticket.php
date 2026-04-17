@@ -1,5 +1,5 @@
 <?php
-// /adet/api/delete_ticket.php
+// src/client-web/api/delete_ticket.php
 // DELETE endpoint for trip cancellations
 
 require_once 'db.php';

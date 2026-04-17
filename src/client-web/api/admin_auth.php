@@ -1,5 +1,5 @@
 <?php
-// /adet/api/admin_auth.php
+// src/client-web/api/admin_auth.php
 // Simplified Admin Authentication
 
 session_start();

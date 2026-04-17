@@ -1,5 +1,5 @@
 <?php
-// /adet/api/db.php
+// src/client-web/api/db.php
 // Database connection with environment variable support
 
 // Load environment variables from .env file

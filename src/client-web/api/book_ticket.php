@@ -1,5 +1,5 @@
 <?php
-// /adet/api/book_ticket.php
+// src/client-web/api/book_ticket.php
 // POST endpoint to book a ticket for a passenger
 
 require_once 'db.php';

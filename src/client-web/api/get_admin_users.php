@@ -1,5 +1,5 @@
 <?php
-// /adet/api/get_admin_users.php
+// src/client-web/api/get_admin_users.php
 // Fetch all admin users for dashboard display
 
 session_start();

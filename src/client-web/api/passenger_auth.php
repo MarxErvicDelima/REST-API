@@ -1,5 +1,5 @@
 <?php
-// /adet/api/passenger_auth.php
+// src/client-web/api/passenger_auth.php
 // Simplified Passenger Authentication
 
 session_start();

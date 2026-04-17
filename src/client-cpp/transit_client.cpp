@@ -9,7 +9,7 @@ using json = nlohmann::json;
 using namespace std;
 
 // ===== GLOBAL VARIABLES =====
-const string API_URL = "http://localhost/ADET/api";
+const string API_URL = "http://localhost/ADET/src/client-web/api";
 string currentPassengerId = "";
 string currentPassengerName = "";
 string currentAdminUsername = "";
