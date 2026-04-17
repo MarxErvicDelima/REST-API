@@ -528,8 +528,8 @@
             submitBtn.innerText = "Processing...";
 
             try {
-                // Step 1: Create or get passenger
-                const passengerRes = await fetch('../api/create_passenger.php', {
+                // Step 1: Create or get passenger via passenger_auth register
+                const passengerRes = await fetch('../api/passenger_auth.php?action=register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, phone })
@@ -540,7 +540,7 @@
                 }
 
                 const passengerData = await passengerRes.json();
-                const passengerId = passengerData.id;
+                const passengerId = passengerData.user.id;
 
                 // Step 2: Book ticket
                 const bookingRes = await fetch('../api/book_ticket.php', {

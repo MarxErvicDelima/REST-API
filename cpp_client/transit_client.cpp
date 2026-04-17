@@ -106,17 +106,22 @@ void registerOrLoginPassenger() {
         {"phone", phone}
     };
 
-    // Call API
-    json response = makeRequest("/create_passenger.php", "POST", payload);
+    // Call API (passenger_auth.php with register action)
+    json response = makeRequest("/passenger_auth.php?action=register", "POST", payload);
 
-    if (!response.is_null() && response.contains("id")) {
-        if (response["id"].is_string()) {
-            currentPassengerId = response["id"].get<string>();
+    if (!response.is_null() && response.contains("user")) {
+        json user = response["user"];
+        if (user.contains("id")) {
+            if (user["id"].is_string()) {
+                currentPassengerId = user["id"].get<string>();
+            } else {
+                currentPassengerId = to_string(user["id"].get<int>());
+            }
+            currentPassengerName = name;
+            cout << "\n✅ Success! Passenger ID: " << currentPassengerId << endl;
         } else {
-            currentPassengerId = to_string(response["id"].get<int>());
+            cout << "\n❌ Error: User object missing ID field" << endl;
         }
-        currentPassengerName = name;
-        cout << "\n✅ Success! Passenger ID: " << currentPassengerId << endl;
     } else {
         cout << "\n❌ Error: " << response.value("error", "Unknown error") << endl;
     }
