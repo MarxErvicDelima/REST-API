@@ -3,13 +3,24 @@
 // Database connection with environment variable support
 
 // Load environment variables from .env file
-// .env should be in the project root (2 levels up from api/)
-$envFile = realpath(__DIR__ . '/../../..') . '/.env';
-if (file_exists($envFile)) {
-    $env = parse_ini_file($envFile);
-} else {
-    // Fallback to defaults if .env doesn't exist
-    $env = [];
+// Check multiple locations for .env (portable deployment)
+$possiblePaths = [
+    __DIR__ . '/.env',                          // Local: src/client-web/api/.env
+    __DIR__ . '/../../.env',                    // Parent: src/client-web/.env
+    __DIR__ . '/../../../.env',                 // Root: src/.env (if src/ downloaded standalone)
+    realpath(__DIR__ . '/../../..') . '/.env'   // Project root: ADET/.env (full deployment)
+];
+
+$envFile = null;
+$env = [];
+
+// Find the first .env file that exists
+foreach ($possiblePaths as $path) {
+    if (file_exists($path)) {
+        $envFile = $path;
+        $env = parse_ini_file($envFile);
+        break;
+    }
 }
 
 // Get database credentials from environment or use defaults

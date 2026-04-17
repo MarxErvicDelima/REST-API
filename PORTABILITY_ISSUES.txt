@@ -1,0 +1,43 @@
+CRITICAL PORTABILITY ISSUES FOUND:
+
+1. ❌ C++ CLIENT HARDCODED URL
+   File: src/client-cpp/transit_client.cpp
+   Line 12: const string API_URL = "http://localhost/ADET/src/client-web/api";
+   
+   PROBLEM: Only works if deployed to EXACTLY: /ADET/src/...
+   If downloaded standalone: Won't work at different path
+   
+   Example:
+   - Works: localhost/ADET/src/client-web/api ✅
+   - Fails: localhost/project/src/client-web/api ❌
+   - Fails: localhost:8080/src/client-web/api ❌
+
+2. ❌ .ENV FILE LOCATION ISSUE  
+   File: src/client-web/api/db.php
+   Line 6: $envFile = realpath(__DIR__ . '/../../..') . '/.env';
+   
+   PROBLEM: Looks 3 levels up for .env, but:
+   - If user downloads only src/ folder, .env doesn't exist
+   - Database connection will FAIL
+   
+   Scenario when only src/ downloaded:
+   /user/project/src/client-web/api/db.php
+   Looks for: /user/project/.env (DOESN'T EXIST)
+   
+   Result: Database connection fails
+   Error: "Database Connection Failed"
+
+3. ⚠️ WEB CLIENTS WILL WORK (but API won't respond)
+   Admin: src/client-web/admin/dashboard.html
+   Passenger: src/client-web/passenger/index.html
+   
+   These use ../api/ relative paths ✅
+   BUT the API won't connect to database ❌
+
+SUMMARY: 
+- Web UI will load: ✅
+- Web UI can call API: ✅  
+- API can connect to database: ❌ (NO .env FILE)
+- C++ client can connect: ❌ (HARDCODED URL)
+
+TOTAL PORTABILITY: ❌ 30% WORKING

@@ -8,8 +8,20 @@
 using json = nlohmann::json;
 using namespace std;
 
-// ===== GLOBAL VARIABLES =====
+// ===== CONFIGURATION =====
+// API URL - CONFIGURE THIS FOR YOUR DEPLOYMENT
+// 
+// Standard deployment (src/ in htdocs/ADET/):
 const string API_URL = "http://localhost/ADET/src/client-web/api";
+
+// For other deployments, modify as needed:
+// - Local testing on port 8080: "http://localhost:8080/src/client-web/api"
+// - Different directory: "http://localhost/transit-system/src/client-web/api"
+// - Remote server: "http://your-domain.com/src/client-web/api"
+//
+// After changing, rebuild with: cmake --build src/client-cpp/build/
+
+// ===== GLOBAL VARIABLES =====
 string currentPassengerId = "";
 string currentPassengerName = "";
 string currentAdminUsername = "";
