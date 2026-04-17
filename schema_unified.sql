@@ -77,7 +77,7 @@ CREATE TABLE scheduled_trips (
     origin VARCHAR(100) NOT NULL,
     destination VARCHAR(100) NOT NULL,
     distance_km DECIMAL(10,2),
-    bus_code VARCHAR(20) NOT NULL UNIQUE,
+    bus_code VARCHAR(20) NOT NULL,
     bus_type ENUM('Elite', 'Royal', 'Sleeper', 'Economy', 'Coach', 'Minibus', 'Van', 'Luxury', 'Express') DEFAULT 'Economy',
     capacity INT NOT NULL,
     departure_time DATETIME NOT NULL,
