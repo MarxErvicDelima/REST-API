@@ -86,10 +86,27 @@ switch($action) {
     
     case 'check':
         if (isset($_SESSION['passenger_id'])) {
-            sendJsonResponse(200, [
-                'authenticated' => true,
-                'user' => ['id' => $_SESSION['passenger_id'], 'name' => $_SESSION['passenger_name']]
-            ]);
+            try {
+                // Fetch current passenger info including email
+                $stmt = $pdo->prepare("SELECT id, name, email FROM passengers WHERE id = ?");
+                $stmt->execute([$_SESSION['passenger_id']]);
+                $passenger = $stmt->fetch();
+                
+                if ($passenger) {
+                    sendJsonResponse(200, [
+                        'authenticated' => true,
+                        'user' => [
+                            'id' => $passenger['id'],
+                            'name' => $passenger['name'],
+                            'email' => $passenger['email']
+                        ]
+                    ]);
+                } else {
+                    sendJsonResponse(200, ['authenticated' => false]);
+                }
+            } catch (Exception $e) {
+                sendJsonResponse(200, ['authenticated' => false]);
+            }
         } else {
             sendJsonResponse(200, ['authenticated' => false]);
         }

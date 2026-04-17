@@ -7,374 +7,318 @@
  * Purpose: Handle creation, reading, updating of routes and schedules
  *          in a single-entry consolidated architecture
  * 
- * Supported Actions:
- * - GET:  Retrieve routes and schedules
- * - POST: Create new route with schedule
- * - PUT:  Update route and schedule
- * - DELETE: Delete route and associated schedule
+ * Supported Actions (GET):
+ * - read: Retrieve all routes
+ * - read_one: Retrieve specific route by ID
+ * 
+ * Supported Actions (POST):
+ * - create: Create new route with schedule
+ * 
+ * Supported Actions (DELETE):
+ * - delete: Delete route (via query parameter: ?id=X)
  * ========================================================
  */
 
 header('Content-Type: application/json');
-
-// Include database connection
 require_once 'db.php';
 
-// Get action from query parameter
-$action = isset($_GET['action']) ? sanitize($_GET['action']) : 'read';
+$action = $_GET['action'] ?? 'read';
+$method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    switch ($_SERVER['REQUEST_METHOD']) {
+    switch ($method) {
         case 'GET':
-            handleGetRequest($action);
+            if ($action === 'read') {
+                getAllRoutes();
+            } elseif ($action === 'read_one') {
+                getRouteById($_GET['id'] ?? null);
+            } else {
+                sendJsonResponse(400, ['error' => 'Unknown GET action']);
+            }
             break;
+
         case 'POST':
-            handlePostRequest($action);
+            if ($action === 'create') {
+                createRoute();
+            } else {
+                sendJsonResponse(400, ['error' => 'Unknown POST action']);
+            }
             break;
+
         case 'PUT':
-            handlePutRequest($action);
+            if ($action === 'update') {
+                updateRoute($_GET['id'] ?? null);
+            } else {
+                sendJsonResponse(400, ['error' => 'Unknown PUT action']);
+            }
             break;
+
         case 'DELETE':
-            handleDeleteRequest($action);
+            if ($action === 'delete') {
+                deleteRoute($_GET['id'] ?? null);
+            } else {
+                sendJsonResponse(400, ['error' => 'Unknown DELETE action']);
+            }
             break;
+
         default:
-            http_response_code(405);
-            echo json_encode(['success' => false, 'error' => 'Method not allowed']);
-            break;
+            sendJsonResponse(405, ['error' => 'Method not allowed']);
     }
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    sendJsonResponse(500, ['error' => $e->getMessage()]);
 }
 
-// ========================================================
-// GET REQUEST HANDLERS
-// ========================================================
-function handleGetRequest($action) {
-    global $conn;
-    
-    switch ($action) {
-        case 'read':
-            getAllRoutes();
-            break;
-        case 'read_one':
-            getRouteById($_GET['id'] ?? null);
-            break;
-        default:
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Unknown action']);
-    }
-}
-
+/**
+ * GET all routes
+ */
 function getAllRoutes() {
-    global $conn;
+    global $pdo;
     
     try {
-        $query = "SELECT * FROM scheduled_trips ORDER BY departure_time ASC";
-        $result = $conn->query($query);
+        $stmt = $pdo->prepare("
+            SELECT id, origin, destination, distance_km, bus_code, bus_type, 
+                   capacity, departure_time, fare, created_at
+            FROM scheduled_trips 
+            ORDER BY departure_time ASC
+        ");
+        $stmt->execute();
+        $routes = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        if ($result) {
-            $routes = [];
-            while ($row = $result->fetch_assoc()) {
-                $routes[] = $row;
-            }
-            http_response_code(200);
-            echo json_encode(['success' => true, 'data' => $routes]);
-        } else {
-            throw new Exception($conn->error);
-        }
+        sendJsonResponse(200, ['success' => true, 'data' => $routes]);
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        sendJsonResponse(500, ['error' => $e->getMessage()]);
     }
 }
 
+/**
+ * GET single route by ID
+ */
 function getRouteById($id) {
-    global $conn;
+    global $pdo;
     
     if (!$id) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Route ID is required']);
+        sendJsonResponse(400, ['error' => 'Route ID is required']);
         return;
     }
     
     try {
-        $query = "SELECT * FROM scheduled_trips WHERE id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $stmt = $pdo->prepare("
+            SELECT id, origin, destination, distance_km, bus_code, bus_type, 
+                   capacity, departure_time, fare, created_at
+            FROM scheduled_trips 
+            WHERE id = ?
+        ");
+        $stmt->execute([$id]);
+        $route = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($result->num_rows > 0) {
-            $route = $result->fetch_assoc();
-            http_response_code(200);
-            echo json_encode(['success' => true, 'data' => $route]);
+        if ($route) {
+            sendJsonResponse(200, ['success' => true, 'data' => $route]);
         } else {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Route not found']);
+            sendJsonResponse(404, ['error' => 'Route not found']);
         }
-        $stmt->close();
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        sendJsonResponse(500, ['error' => $e->getMessage()]);
     }
 }
 
-// ========================================================
-// POST REQUEST HANDLERS (CREATE)
-// ========================================================
-function handlePostRequest($action) {
-    global $conn;
-    
-    switch ($action) {
-        case 'create':
-            createRoute();
-            break;
-        default:
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Unknown action']);
-    }
-}
-
+/**
+ * POST create new route
+ */
 function createRoute() {
-    global $conn;
+    global $pdo;
     
-    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    // Validate required fields (arrival_time removed)
+    $required = ['origin', 'destination', 'distance_km', 'bus_code', 'bus_type', 
+                 'capacity', 'departure_time', 'fare'];
+    
+    foreach ($required as $field) {
+        if (empty($input[$field])) {
+            sendJsonResponse(400, ['error' => "Missing required field: $field"]);
+            return;
+        }
+    }
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Insert route into scheduled_trips (arrival_time removed)
+        $stmt = $pdo->prepare("
+            INSERT INTO scheduled_trips 
+            (origin, destination, distance_km, bus_code, bus_type, capacity, 
+             departure_time, fare, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ");
+        
+        $stmt->execute([
+            $input['origin'],
+            $input['destination'],
+            $input['distance_km'],
+            $input['bus_code'],
+            $input['bus_type'],
+            $input['capacity'],
+            $input['departure_time'],
+            $input['fare']
+        ]);
+        
+        $trip_id = $pdo->lastInsertId();
+        
+        // Create schedule entry with available_seats = capacity
+        $scheduleStmt = $pdo->prepare("
+            INSERT INTO schedules (scheduled_trip_id, available_seats, created_at)
+            VALUES (?, ?, NOW())
+        ");
+        $scheduleStmt->execute([$trip_id, $input['capacity']]);
+        
+        $pdo->commit();
+        
+        sendJsonResponse(201, [
+            'success' => true,
+            'message' => 'Route created successfully',
+            'trip_id' => $trip_id
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendJsonResponse(500, ['error' => $e->getMessage()]);
+    }
+}
+
+/**
+ * UPDATE route by ID
+ */
+function updateRoute($id) {
+    global $pdo;
+    
+    if (!$id) {
+        sendJsonResponse(400, ['error' => 'Route ID is required']);
+        return;
+    }
+    
     $input = json_decode(file_get_contents('php://input'), true);
     
     // Validate required fields
     $required = ['origin', 'destination', 'distance_km', 'bus_code', 'bus_type', 
-                 'capacity', 'departure_date', 'departure_time', 'arrival_time', 'fare'];
+                 'capacity', 'departure_time', 'fare'];
     
     foreach ($required as $field) {
-        if (!isset($input[$field]) || trim($input[$field]) === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => "Missing or empty field: $field"]);
+        if (empty($input[$field])) {
+            sendJsonResponse(400, ['error' => "Missing required field: $field"]);
             return;
         }
     }
     
     try {
-        // Prepare data
-        $origin = sanitize($input['origin']);
-        $destination = sanitize($input['destination']);
-        $distance_km = floatval($input['distance_km']);
-        $bus_code = sanitize($input['bus_code']);
-        $bus_type = sanitize($input['bus_type']);
-        $capacity = intval($input['capacity']);
+        $pdo->beginTransaction();
         
-        // Combine date and time
-        $departure_datetime = $input['departure_date'] . ' ' . $input['departure_time'];
-        $arrival_datetime = $input['departure_date'] . ' ' . $input['arrival_time'];
+        // Check if route exists
+        $checkStmt = $pdo->prepare("SELECT id FROM scheduled_trips WHERE id = ?");
+        $checkStmt->execute([$id]);
+        $existing = $checkStmt->fetch();
         
-        $fare = floatval($input['fare']);
-        
-        // Insert into scheduled_trips
-        $query = "INSERT INTO scheduled_trips 
-                  (origin, destination, distance_km, bus_code, bus_type, capacity, 
-                   departure_time, arrival_time, fare)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            throw new Exception("Prepare error: " . $conn->error);
+        if (!$existing) {
+            $pdo->rollBack();
+            sendJsonResponse(404, ['error' => 'Route not found']);
+            return;
         }
         
-        $stmt->bind_param("ssdssidsd", 
-            $origin, $destination, $distance_km, $bus_code, $bus_type, 
-            $capacity, $departure_datetime, $arrival_datetime, $fare
-        );
+        // Update the route - note: bus_code is unique but we're updating the same route so it's OK
+        $stmt = $pdo->prepare("
+            UPDATE scheduled_trips 
+            SET origin = ?, 
+                destination = ?, 
+                distance_km = ?, 
+                bus_code = ?, 
+                bus_type = ?, 
+                capacity = ?,
+                departure_time = ?, 
+                fare = ?
+            WHERE id = ?
+        ");
         
-        if (!$stmt->execute()) {
-            throw new Exception("Execute error: " . $stmt->error);
-        }
-        
-        $trip_id = $stmt->insert_id;
-        $stmt->close();
-        
-        // Create schedule entry with available seats = capacity
-        $schedule_query = "INSERT INTO schedules (scheduled_trip_id, available_seats)
-                          VALUES (?, ?)";
-        $schedule_stmt = $conn->prepare($schedule_query);
-        if (!$schedule_stmt) {
-            throw new Exception("Schedule prepare error: " . $conn->error);
-        }
-        
-        $schedule_stmt->bind_param("ii", $trip_id, $capacity);
-        if (!$schedule_stmt->execute()) {
-            throw new Exception("Schedule execute error: " . $schedule_stmt->error);
-        }
-        $schedule_stmt->close();
-        
-        http_response_code(201);
-        echo json_encode([
-            'success' => true,
-            'message' => 'Route and schedule created successfully',
-            'data' => [
-                'trip_id' => $trip_id,
-                'origin' => $origin,
-                'destination' => $destination,
-                'bus_code' => $bus_code
-            ]
+        $stmt->execute([
+            $input['origin'],
+            $input['destination'],
+            $input['distance_km'],
+            $input['bus_code'],
+            $input['bus_type'],
+            $input['capacity'],
+            $input['departure_time'],
+            $input['fare'],
+            $id
         ]);
         
+        $pdo->commit();
+        
+        sendJsonResponse(200, [
+            'success' => true,
+            'message' => 'Route updated successfully',
+            'trip_id' => $id
+        ]);
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        $pdo->rollBack();
+        sendJsonResponse(500, ['error' => $e->getMessage()]);
     }
 }
 
-// ========================================================
-// PUT REQUEST HANDLERS (UPDATE)
-// ========================================================
-function handlePutRequest($action) {
-    global $conn;
+/**
+ * DELETE route by ID
+ */
+function deleteRoute($id) {
+    global $pdo;
     
-    switch ($action) {
-        case 'update':
-            updateRoute();
-            break;
-        default:
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Unknown action']);
-    }
-}
-
-function updateRoute() {
-    global $conn;
-    
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    if (!isset($input['id'])) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Route ID is required']);
+    if (!$id) {
+        sendJsonResponse(400, ['error' => 'Route ID is required']);
         return;
     }
     
     try {
-        $id = intval($input['id']);
-        $updates = [];
-        $types = "";
-        $values = [];
+        $pdo->beginTransaction();
         
-        // Build dynamic update query
-        $allowed_fields = ['origin', 'destination', 'distance_km', 'bus_code', 
-                          'bus_type', 'capacity', 'departure_time', 'arrival_time', 'fare'];
+        // Get route first to verify it exists
+        $selectStmt = $pdo->prepare("SELECT id FROM scheduled_trips WHERE id = ?");
+        $selectStmt->execute([$id]);
+        $route = $selectStmt->fetch();
         
-        foreach ($allowed_fields as $field) {
-            if (isset($input[$field])) {
-                $updates[] = "$field = ?";
-                if ($field === 'distance_km' || $field === 'fare') {
-                    $types .= "d";
-                    $values[] = floatval($input[$field]);
-                } elseif ($field === 'capacity') {
-                    $types .= "i";
-                    $values[] = intval($input[$field]);
-                } else {
-                    $types .= "s";
-                    $values[] = sanitize($input[$field]);
-                }
-            }
-        }
-        
-        if (empty($updates)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'No fields to update']);
+        if (!$route) {
+            $pdo->rollBack();
+            sendJsonResponse(404, ['error' => 'Route not found']);
             return;
         }
         
-        $types .= "i";
-        $values[] = $id;
+        // Delete tickets first (foreign key cascade)
+        $deleteTickets = $pdo->prepare("
+            DELETE FROM tickets 
+            WHERE schedule_id IN (
+                SELECT id FROM schedules WHERE scheduled_trip_id = ?
+            )
+        ");
+        $deleteTickets->execute([$id]);
         
-        $query = "UPDATE scheduled_trips SET " . implode(", ", $updates) . " WHERE id = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            throw new Exception("Prepare error: " . $conn->error);
-        }
+        // Delete schedules
+        $deleteSchedules = $pdo->prepare("DELETE FROM schedules WHERE scheduled_trip_id = ?");
+        $deleteSchedules->execute([$id]);
         
-        $stmt->bind_param($types, ...$values);
-        if (!$stmt->execute()) {
-            throw new Exception("Execute error: " . $stmt->error);
-        }
+        // Delete route
+        $deleteRoute = $pdo->prepare("DELETE FROM scheduled_trips WHERE id = ?");
+        $deleteRoute->execute([$id]);
         
-        $affected = $stmt->affected_rows;
-        $stmt->close();
+        $pdo->commit();
         
-        if ($affected > 0) {
-            http_response_code(200);
-            echo json_encode(['success' => true, 'message' => 'Route updated successfully']);
-        } else {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Route not found']);
-        }
-        
+        sendJsonResponse(200, ['success' => true, 'message' => 'Route deleted successfully']);
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        $pdo->rollBack();
+        sendJsonResponse(500, ['error' => $e->getMessage()]);
     }
 }
 
-// ========================================================
-// DELETE REQUEST HANDLERS
-// ========================================================
-function handleDeleteRequest($action) {
-    global $conn;
-    
-    switch ($action) {
-        case 'delete':
-            deleteRoute();
-            break;
-        default:
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Unknown action']);
-    }
-}
-
-function deleteRoute() {
-    global $conn;
-    
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    if (!isset($input['id'])) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Route ID is required']);
-        return;
-    }
-    
-    try {
-        $id = intval($input['id']);
-        
-        // Delete associated schedule and tickets (cascade)
-        $query = "DELETE FROM scheduled_trips WHERE id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $id);
-        
-        if (!$stmt->execute()) {
-            throw new Exception("Delete error: " . $stmt->error);
-        }
-        
-        $affected = $stmt->affected_rows;
-        $stmt->close();
-        
-        if ($affected > 0) {
-            http_response_code(200);
-            echo json_encode(['success' => true, 'message' => 'Route deleted successfully']);
-        } else {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Route not found']);
-        }
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-}
-
-// ========================================================
-// UTILITY FUNCTIONS
-// ========================================================
-function sanitize($input) {
-    return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
+/**
+ * Helper function to send JSON responses
+ */
+function sendJsonResponse($status_code, $data) {
+    http_response_code($status_code);
+    echo json_encode($data);
+    exit;
 }
 
 ?>

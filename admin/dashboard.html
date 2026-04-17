@@ -90,9 +90,9 @@
                     <i data-lucide="map-pin" class="w-5 h-5"></i>
                     <span>Routes & Schedules</span>
                 </a>
-                <a href="#" data-module="manifest" class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all nav-link">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                    <span>Manifest Control</span>
+                <a href="#" data-module="bookings" class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all nav-link">
+                    <i data-lucide="ticket" class="w-5 h-5"></i>
+                    <span>All Bookings</span>
                 </a>
                 <a href="#" data-module="passenger-search" class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all nav-link">
                     <i data-lucide="users" class="w-5 h-5"></i>
@@ -148,61 +148,44 @@
                 </form>
             </div>
         </div>
-        <div id="module-manifest" class="admin-module">
+        <div id="module-bookings" class="admin-module">
             <header class="flex justify-between items-center mb-10">
                 <div>
-                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Passenger Manifest</h1>
-                    <p class="text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest">Real-time Ticketing Operations</p>
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">All Bookings</h1>
+                    <p class="text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest">System-wide Passenger Reservations</p>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-green-500/10 rounded-full flex items-center justify-center">
-                            <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                        </div>
-                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Network Active</span>
-                    </div>
-                </div>
+                <button id="refresh-bookings" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                    Refresh
+                </button>
             </header>
 
-            <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm mb-10">
-                <div class="flex flex-col md:flex-row gap-6 items-end">
-                    <div class="flex-grow">
-                        <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Target Route</label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="origin" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
-                                </select>
-                            <select id="destination" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
-                                </select>
-                        </div>
-                    </div>
-                    <button id="fetch-manifest" class="px-10 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-95 transition-all uppercase tracking-widest text-xs">
-                        View Manifest
-                    </button>
-                </div>
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50/50 border-b border-slate-100">
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Trip Code</th>
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Passenger</th>
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Route</th>
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Bus Code</th>
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Seat</th>
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Departure</th>
+                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Booked On</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-body" class="divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-slate-400">Loading bookings...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <div id="manifest-container" class="hidden">
-                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="bg-slate-50/50 border-b border-slate-100">
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Schedule ID</th>
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Bus Info</th>
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Departure</th>
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Booked/Capacity</th>
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="manifest-body" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="initial-state" class="py-20 text-center">
+            <div id="bookings-empty" class="hidden py-20 text-center">
                 <div class="bg-slate-100/50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i data-lucide="database-backup" class="text-slate-300 w-12 h-12"></i>
+                    <i data-lucide="inbox" class="text-slate-300 w-12 h-12"></i>
                 </div>
-                <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">Select a route to pull passenger manifest</p>
+                <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">No bookings found</p>
             </div>
         </div>
 
@@ -219,8 +202,8 @@
                     <div class="flex-grow">
                         <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Search by Trip Code</label>
                         <div class="flex gap-2">
-                            <input type="text" id="search-passenger" placeholder="e.g., AB12" class="flex-grow bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
-                            <button id="search-btn" class="px-10 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-95 transition-all uppercase tracking-widest text-xs">
+                            <input type="text" id="search-passenger" placeholder="e.g., AB12" onkeypress="if(event.key==='Enter'){performPassengerSearch();return false;}" class="flex-grow bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all">
+                            <button id="search-btn" onclick="performPassengerSearch(); return false;" class="px-10 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-95 transition-all uppercase tracking-widest text-xs">
                                 Search
                             </button>
                         </div>
@@ -234,10 +217,14 @@
                         <thead>
                             <tr class="bg-slate-50/50 border-b border-slate-100">
                                 <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Trip Code</th>
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Passenger Info</th>
+                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Passenger</th>
+                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Email</th>
+                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Phone</th>
                                 <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Route</th>
                                 <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Bus</th>
-                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Schedule</th>
+                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Type</th>
+                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Departure</th>
+                                <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Fare</th>
                                 <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Seat</th>
                                 <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Booked On</th>
                             </tr>
@@ -274,14 +261,13 @@
                             <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Bus Type</th>
                             <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Capacity</th>
                             <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Departure</th>
-                            <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Arrival</th>
                             <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Fare</th>
                             <th class="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="routes-schedules-body" class="divide-y divide-slate-100">
                         <tr>
-                            <td class="p-6 text-center text-slate-400 text-sm" colspan="8">Loading routes and schedules...</td>
+                            <td class="p-6 text-center text-slate-400 text-sm" colspan="7">Loading routes and schedules...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -415,10 +401,6 @@
                     <div class="mt-3">
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Departure Time</label>
                         <input type="time" id="form-departure-time" value="06:00" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
-                    </div>
-                    <div class="mt-3">
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Estimated Arrival Time</label>
-                        <input type="time" id="form-arrival-time" value="12:00" required class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
                     </div>
                     <div class="mt-3">
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Fare (PHP)</label>
@@ -571,6 +553,11 @@
                     const errorDiv = document.getElementById('unified-route-modal-error');
                     errorDiv.classList.add('hidden');
                     
+                    // Combine date and time into full datetime
+                    const depDate = document.getElementById('form-departure-date').value;
+                    const depTime = document.getElementById('form-departure-time').value;
+                    const fullDepartureDatetime = depDate && depTime ? `${depDate} ${depTime}:00` : '';
+
                     const formData = {
                         origin: document.getElementById('form-route-origin').value,
                         destination: document.getElementById('form-route-destination').value,
@@ -578,15 +565,26 @@
                         bus_code: document.getElementById('form-bus-code').value,
                         bus_type: document.getElementById('form-bus-type').value,
                         capacity: document.getElementById('form-bus-capacity').value,
-                        departure_date: document.getElementById('form-departure-date').value,
-                        departure_time: document.getElementById('form-departure-time').value,
-                        arrival_time: document.getElementById('form-arrival-time').value,
+                        departure_time: fullDepartureDatetime,
                         fare: document.getElementById('form-fare').value
                     };
 
                     try {
-                        const response = await fetch('../api/manage_routes_consolidated.php?action=create', {
-                            method: 'POST',
+                        let url;
+                        let method;
+                        
+                        if (editingRouteId) {
+                            // Update existing route
+                            url = `../api/manage_routes_consolidated.php?action=update&id=${editingRouteId}`;
+                            method = 'PUT';
+                        } else {
+                            // Create new route
+                            url = '../api/manage_routes_consolidated.php?action=create';
+                            method = 'POST';
+                        }
+                        
+                        const response = await fetch(url, {
+                            method: method,
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(formData)
                         });
@@ -594,15 +592,16 @@
                         const data = await response.json();
                         
                         if (response.ok && data.success) {
-                            showToast('Route & Schedule created successfully!', 'success');
+                            const message = editingRouteId ? 'Route updated successfully!' : 'Route & Schedule created successfully!';
+                            showToast(message, 'success');
                             closeUnifiedRouteModal();
                             fetchRoutesAndSchedules();
                         } else {
-                            errorDiv.textContent = data.error || 'Failed to create route';
+                            errorDiv.textContent = data.error || (editingRouteId ? 'Failed to update route' : 'Failed to create route');
                             errorDiv.classList.remove('hidden');
                         }
                     } catch (err) {
-                        console.error('Error creating route:', err);
+                        console.error('Error saving route:', err);
                         errorDiv.textContent = 'Error: ' + err.message;
                         errorDiv.classList.remove('hidden');
                     }
@@ -612,6 +611,7 @@
 
         window.addEventListener('load', () => {
             checkAuthentication();
+            initializeModuleSwitching();
             const loginFormOverlay = document.getElementById('login-form-overlay');
             if (loginFormOverlay) {
                 loginFormOverlay.addEventListener('submit', handleOverlayLogin);
@@ -816,19 +816,17 @@
         });
 
         // ===== REST OF YOUR ORIGINAL MODULE LOGIC =====
-        async function setupRequiredRoutes() { try { await fetch('../api/setup_routes.php'); } catch(e){} }
+        async function setupRequiredRoutes() { try { await fetch('../api/manage_routes_consolidated.php?action=read'); } catch(e){} }
 
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchModule(link.dataset.module);
-            });
-        });
-
+        // Module switching - attach after DOMReady
         function switchModule(moduleName) {
+            const navLinks = document.querySelectorAll('.nav-link');
             document.querySelectorAll('.admin-module').forEach(m => m.classList.add('hidden-module'));
-            document.getElementById(`module-${moduleName}`).classList.remove('hidden-module');
+            const moduleEl = document.getElementById(`module-${moduleName}`);
+            if (moduleEl) {
+                moduleEl.classList.remove('hidden-module');
+            }
+            
             navLinks.forEach(l => {
                 l.classList.remove('bg-blue-600', 'text-white');
                 l.classList.add('text-slate-400');
@@ -836,6 +834,22 @@
                     l.classList.add('bg-blue-600', 'text-white');
                     l.classList.remove('text-slate-400');
                 }
+            });
+        }
+
+        function initializeModuleSwitching() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const moduleName = link.dataset.module;
+                    switchModule(moduleName);
+                    
+                    // Load data for specific modules
+                    if (moduleName === 'bookings') {
+                        loadAllBookings();
+                    }
+                });
             });
         }
 
@@ -868,25 +882,25 @@
 
         async function fetchRoutesAndSchedules() {
             try {
-                const res = await fetch('../api/manage_routes_consolidated.php?action=fetch_all');
+                const res = await fetch('../api/manage_routes_consolidated.php?action=read');
                 if (!res.ok) {
                     console.error('Failed to fetch routes:', res.status);
                     return;
                 }
                 const json = await res.json();
-                if (!json.data || !Array.isArray(json.data)) {
+                const routeData = Array.isArray(json) ? json : (json.data || []);
+                if (!routeData || !Array.isArray(routeData) || routeData.length === 0) {
                     document.getElementById('routes-schedules-body').innerHTML = '<tr><td class="p-6 text-center text-slate-400 text-sm" colspan="8">No routes found</td></tr>';
                     return;
                 }
                 const body = document.getElementById('routes-schedules-body');
-                body.innerHTML = json.data.map(r => `
+                body.innerHTML = routeData.map(r => `
                     <tr class="table-row-hover">
                         <td class="p-6 font-mono font-bold text-blue-600">${r.origin} → ${r.destination}</td>
                         <td class="p-6 font-bold text-slate-700">${r.bus_code}</td>
                         <td class="p-6 uppercase text-xs font-bold text-slate-600">${r.bus_type}</td>
                         <td class="p-6 font-bold">${r.capacity}</td>
                         <td class="p-6 text-sm">${r.departure_time ? new Date(r.departure_time).toLocaleString() : 'N/A'}</td>
-                        <td class="p-6 text-sm">${r.arrival_time ? new Date(r.arrival_time).toLocaleString() : 'N/A'}</td>
                         <td class="p-6 font-bold text-emerald-600">PHP ${parseFloat(r.fare).toFixed(2)}</td>
                         <td class="p-6 text-right flex gap-2 justify-end">
                             <button onclick="editRoute(${r.id})" class="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit"><i data-lucide="edit" class="w-4 h-4"></i></button>
@@ -907,7 +921,7 @@
 
         async function fetchFleet() {
             try {
-                const res = await fetch('../api/manage_fleet.php');
+                const res = await fetch('../api/manage_routes_consolidated.php?action=read');
                 if (!res.ok) {
                     console.error('Failed to fetch fleet:', res.status);
                     return;
@@ -940,7 +954,7 @@
 
         async function fetchRoutes() {
             try {
-                const res = await fetch('../api/manage_routes.php');
+                const res = await fetch('../api/manage_routes_consolidated.php?action=read');
                 if (!res.ok) {
                     console.error('Failed to fetch routes:', res.status);
                     return;
@@ -977,7 +991,7 @@
 
         async function editBus(busId) {
             try {
-                const res = await fetch('../api/manage_fleet.php');
+                const res = await fetch('../api/manage_routes_consolidated.php?action=read');
                 if (!res.ok) {
                     console.error('Failed to load bus data:', res.status);
                     alert('Failed to load bus data');
@@ -1009,41 +1023,65 @@
 
         async function editRoute(routeId) {
             try {
-                const res = await fetch('../api/manage_routes.php');
+                const res = await fetch('../api/manage_routes_consolidated.php?action=read');
                 if (!res.ok) {
                     console.error('Failed to load route data:', res.status);
                     alert('Failed to load route data');
                     return;
                 }
                 const json = await res.json();
-                if (!json || !json.data || !Array.isArray(json.data)) {
+                const routeData = Array.isArray(json) ? json : (json.data || []);
+                if (!routeData || !Array.isArray(routeData)) {
                     console.error('Invalid route data format:', json);
                     alert('No route data available');
                     return;
                 }
-                const route = json.data.find(r => parseInt(r.id) === parseInt(routeId));
+                const route = routeData.find(r => parseInt(r.id) === parseInt(routeId));
                 if (!route) {
                     console.error('Route not found:', routeId);
                     alert('Route not found');
                     return;
                 }
                 editingRouteId = routeId;
-                document.getElementById('route-modal-title').textContent = 'Edit Route';
                 document.getElementById('form-route-origin').value = route.origin || '';
                 document.getElementById('form-route-destination').value = route.destination || '';
                 document.getElementById('form-route-distance').value = route.distance_km || '';
-                document.getElementById('form-route-departure-time').value = route.departure_time ? route.departure_time.substring(0, 5) : '06:00';
-                document.getElementById('route-modal').classList.remove('hidden');
+                document.getElementById('form-bus-code').value = route.bus_code || '';
+                document.getElementById('form-bus-type').value = route.bus_type || '';
+                document.getElementById('form-bus-capacity').value = route.capacity || '';
+                if (route.departure_time) {
+                    const dt = new Date(route.departure_time);
+                    document.getElementById('form-departure-date').value = dt.toISOString().split('T')[0];
+                    document.getElementById('form-departure-time').value = dt.toTimeString().substring(0, 5);
+                }
+                document.getElementById('form-fare').value = route.fare || '';
+                document.getElementById('unified-route-modal').classList.remove('hidden');
             } catch(e) { 
                 console.error('Error editing route:', e.message);
                 alert('Error loading route data: ' + e.message);
             }
         }
 
+        async function deleteRoute(routeId) {
+            if(!confirm('Are you sure you want to delete this route and all associated schedules?')) return;
+            try {
+                const res = await fetch(`../api/manage_routes_consolidated.php?action=delete&id=${routeId}`, { method: 'DELETE' });
+                if(res.ok) {
+                    alert('Route deleted successfully');
+                    fetchRoutesAndSchedules();
+                } else {
+                    alert('Failed to delete route');
+                }
+            } catch (e) {
+                console.error('Error deleting route:', e);
+                alert('Error: ' + e.message);
+            }
+        }
+
         async function deleteBus(busId) {
             if(!confirm('Are you sure you want to delete this bus?')) return;
             try {
-                const res = await fetch(`../api/manage_fleet.php?id=${busId}`, { method: 'DELETE' });
+                const res = await fetch(`../api/manage_routes_consolidated.php?action=delete&id=${busId}`, { method: 'DELETE' });
                 if(res.ok) {
                     try {
                         const result = await res.json();
@@ -1068,7 +1106,7 @@
         async function deleteRoute(routeId) {
             if(!confirm('Are you sure you want to delete this route?')) return;
             try {
-                const res = await fetch(`../api/manage_routes.php?id=${routeId}`, { method: 'DELETE' });
+                const res = await fetch(`../api/manage_routes_consolidated.php?action=delete&id=${routeId}`, { method: 'DELETE' });
                 if(res.ok) {
                     try {
                         const result = await res.json();
@@ -1127,14 +1165,14 @@
                 
                 if (editingBusId) {
                     // Update existing bus
-                    response = await fetch(`../api/manage_fleet.php?id=${editingBusId}`, {
+                    response = await fetch(`../api/manage_routes_consolidated.php?action=update&id=${editingBusId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
                 } else {
                     // Create new bus
-                    response = await fetch('../api/manage_fleet.php', {
+                    response = await fetch('../api/manage_routes_consolidated.php?action=create', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -1218,14 +1256,14 @@
                 
                 if (editingRouteId) {
                     // Update existing route
-                    response = await fetch(`../api/manage_routes.php?id=${editingRouteId}`, {
+                    response = await fetch(`../api/manage_routes_consolidated.php?action=update&id=${editingRouteId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
                 } else {
                     // Create new route
-                    response = await fetch('../api/manage_routes.php', {
+                    response = await fetch('../api/manage_routes_consolidated.php?action=create', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -1317,74 +1355,16 @@
             }
         }
 
-        async function populateDropdowns() {
-            try {
-                const response = await fetch('../api/get_routes.php');
-                if (!response.ok) {
-                    console.error('Failed to fetch routes for dropdowns:', response.status);
-                    return;
-                }
-                const result = await response.json();
-                if (result.status === 'success' && result.data && result.data.origins && result.data.destinations) {
-                    const o = document.getElementById('origin');
-                    const d = document.getElementById('destination');
-                    const locs = [...new Set([...result.data.origins, ...result.data.destinations])].sort();
-                    if (locs.length > 0) {
-                        o.innerHTML = locs.map(l => `<option value="${l}">${l}</option>`).join('');
-                        d.innerHTML = locs.map(l => `<option value="${l}">${l}</option>`).join('');
-                    }
-                }
-            } catch (e) { 
-                console.error('Error populating dropdowns:', e);
-            }
-        }
-        populateDropdowns();
-
-        document.getElementById('fetch-manifest').onclick = async () => {
-            const o = document.getElementById('origin').value;
-            const d = document.getElementById('destination').value;
-            if (!o || !d) {
-                alert('Please select both origin and destination');
-                return;
-            }
-            try {
-                const res = await fetch(`../api/get_schedules.php?origin=${o}&destination=${d}`);
-                if (!res.ok) {
-                    alert('Failed to fetch schedules');
-                    return;
-                }
-                const data = await res.json();
-                if (res.ok && data.data && Array.isArray(data.data)) {
-                    renderManifest(data.data);
-                    document.getElementById('initial-state').classList.add('hidden');
-                    document.getElementById('manifest-container').classList.remove('hidden');
-                } else {
-                    alert('No schedules found for this route');
-                }
-            } catch (e) {
-                console.error('Error fetching manifest:', e);
-                alert('Error loading schedules');
-            }
-        };
-
-        function renderManifest(s) {
-            document.getElementById('manifest-body').innerHTML = s.map(x => `
-                <tr class="table-row-hover">
-                    <td class="p-6"><span class="text-xs font-mono font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">#SCH-${x.id}</span></td>
-                    <td class="p-6 font-black">${x.bus_number}</td>
-                    <td class="p-6">${x.departure_time}</td>
-                    <td class="p-6 text-center"><span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">${x.booked_seats}/${x.capacity}</span></td>
-                    <td class="p-6 text-right"><button class="text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button></td>
-                </tr>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        const searchBtn = document.getElementById('search-btn');
-        searchBtn.onclick = async () => {
-            const q = document.getElementById('search-passenger').value;
-            if (!q || q.trim().length === 0) {
-                alert('Please enter a valid search term (trip code, email, name, or phone)');
+        // Wait for DOM to be ready before attaching search button handler
+        async function performPassengerSearch() {
+            const searchBtn = document.getElementById('search-btn');
+            const searchInput = document.getElementById('search-passenger');
+            const q = searchInput ? searchInput.value.trim() : '';
+            
+            console.log('Search button clicked - Query:', q);
+            
+            if (!q || q.length === 0) {
+                showToast('Please enter a valid trip code', 'error');
                 return;
             }
             
@@ -1393,66 +1373,188 @@
             searchBtn.textContent = 'Searching...';
             
             try {
-                const res = await fetch(`../api/search_passenger.php?q=${encodeURIComponent(q.trim())}`);
-                if (!res.ok) {
-                    console.error('Search failed with status:', res.status);
-                    alert('Search failed: ' + (res.statusText || 'Unknown error'));
-                    return;
-                }
+                const url = `../api/get_passenger_bookings.php?q=${encodeURIComponent(q)}`;
+                console.log('Fetching URL:', url);
+                
+                const res = await fetch(url);
+                console.log('Response status:', res.status);
                 
                 let data;
                 try {
                     data = await res.json();
                 } catch (je) {
                     console.error('Invalid JSON response from search:', je);
-                    alert('Invalid response from server');
+                    showToast('Invalid response from server', 'error');
                     return;
                 }
                 
-                if (!data) {
-                    alert('No response from server');
+                console.log('Response data:', data);
+                
+                // Handle 404 (no bookings found)
+                if (res.status === 404 || (data.status === 'error' && data.error)) {
+                    showToast(data.error || 'No bookings found', 'error');
+                    document.getElementById('passenger-initial-state').classList.remove('hidden');
+                    document.getElementById('passenger-search-results').classList.add('hidden');
                     return;
                 }
                 
-                if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-                    console.log('Found ' + data.data.length + ' bookings');
+                // Handle success
+                if (res.ok && data.status === 'success' && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                    console.log('Found ' + data.data.length + ' booking(s)');
                     renderPassengerBookings(data.data);
                     document.getElementById('passenger-initial-state').classList.add('hidden');
                     document.getElementById('passenger-search-results').classList.remove('hidden');
-                    alert('Found ' + data.data.length + ' booking(s)');
-                } else if (data.data && Array.isArray(data.data)) {
-                    alert('No bookings found for: ' + q);
-                    document.getElementById('passenger-initial-state').classList.remove('hidden');
-                    document.getElementById('passenger-search-results').classList.add('hidden');
+                    showToast('Found ' + data.data.length + ' booking(s)', 'success');
                 } else {
-                    console.error('Unexpected data format:', data);
-                    alert('No bookings found');
+                    showToast('No bookings found for this trip code', 'error');
                     document.getElementById('passenger-initial-state').classList.remove('hidden');
                     document.getElementById('passenger-search-results').classList.add('hidden');
                 }
             } catch (e) {
-                console.error('Error searching passenger:', e.message);
-                alert('Error: ' + e.message);
+                console.error('Error searching passenger:', e.message, e);
+                showToast('Error: ' + e.message, 'error');
             } finally {
                 searchBtn.disabled = false;
                 searchBtn.textContent = originalBtnText;
             }
-        };
+        }
+
+        // Setup search handlers - moved to window load for better reliability
+        function setupSearchHandlers() {
+            const searchBtn = document.getElementById('search-btn');
+            const searchInput = document.getElementById('search-passenger');
+            
+            console.log('🔍 Setting up search handlers...');
+            console.log('Search button element:', searchBtn);
+            console.log('Search input element:', searchInput);
+            
+            if (!searchBtn) {
+                console.error('❌ Search button not found!');
+                return false;
+            }
+            
+            // Attach click handler
+            searchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🖱️ Search button clicked!');
+                performPassengerSearch();
+            });
+            console.log('✅ Search button click listener attached');
+            
+            // Attach Enter key handler to search input
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        console.log('⌨️ Enter key pressed in search input');
+                        performPassengerSearch();
+                    }
+                });
+                console.log('✅ Search input Enter key listener attached');
+            }
+            
+            return true;
+        }
+        
+        // Setup search handlers when window fully loads
+        window.addEventListener('load', () => {
+            console.log('📄 Window load event fired - setting up search');
+            const success = setupSearchHandlers();
+            if (success) {
+                console.log('✅ Search handlers setup completed successfully');
+            } else {
+                console.error('❌ Failed to setup search handlers');
+            }
+        });
+
 
         function renderPassengerBookings(b) {
             document.getElementById('search-results-body').innerHTML = b.map(x => `
                 <tr class="table-row-hover">
                     <td class="p-6"><span class="text-xs font-mono font-black text-green-600 bg-green-50 px-3 py-1 rounded-lg">${x.trip_code}</span></td>
                     <td class="p-6"><p class="text-sm font-black text-slate-800">${x.passenger_name}</p></td>
+                    <td class="p-6"><p class="text-sm text-slate-600">${x.passenger_email || 'N/A'}</p></td>
+                    <td class="p-6"><p class="text-sm text-slate-600">${x.passenger_phone || 'N/A'}</p></td>
                     <td class="p-6"><p class="text-sm font-black">${x.origin} → ${x.destination}</p></td>
-                    <td class="p-6"><p class="text-sm font-bold">${x.bus_number}</p></td>
-                    <td class="p-6"><p class="text-[10px] font-bold">${x.departure_time}</p></td>
+                    <td class="p-6"><p class="text-sm font-bold text-blue-600">${x.bus_code}</p></td>
+                    <td class="p-6"><span class="text-xs font-bold uppercase bg-blue-50 text-blue-700 px-2 py-1 rounded">${x.bus_type}</span></td>
+                    <td class="p-6"><p class="text-xs font-bold text-slate-700">${new Date(x.departure_time).toLocaleString()}</p></td>
+                    <td class="p-6"><p class="text-sm font-bold text-emerald-600">₱${parseFloat(x.fare).toFixed(2)}</p></td>
                     <td class="p-6 text-center"><span class="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full">Seat ${x.seat_number}</span></td>
-                    <td class="p-6"><p class="text-[10px] font-bold text-slate-400">${x.booking_time}</p></td>
+                    <td class="p-6"><p class="text-xs text-slate-500">${new Date(x.booking_time).toLocaleString()}</p></td>
                 </tr>
             `).join('');
             lucide.createIcons();
         }
+
+        // Bookings Module Functions
+        async function loadAllBookings() {
+            try {
+                const res = await fetch('../api/get_passenger_bookings.php');
+                if (!res.ok) {
+                    console.error('Failed to fetch bookings:', res.status);
+                    document.getElementById('bookings-body').innerHTML = `
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-red-500">Error loading bookings</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                const data = await res.json();
+                
+                if (data.status === 'success' && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                    renderAllBookings(data.data);
+                    document.getElementById('bookings-empty').classList.add('hidden');
+                } else {
+                    document.getElementById('bookings-body').innerHTML = `
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-slate-400">No bookings found</td>
+                        </tr>
+                    `;
+                    document.getElementById('bookings-empty').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error('Error loading bookings:', e);
+                document.getElementById('bookings-body').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-red-500">Error: ${e.message}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderAllBookings(bookings) {
+            document.getElementById('bookings-body').innerHTML = bookings.map(b => `
+                <tr class="table-row-hover">
+                    <td class="p-6"><span class="text-xs font-mono font-black text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">${b.trip_code}</span></td>
+                    <td class="p-6"><p class="text-sm font-bold text-slate-800">${b.passenger_name}</p><p class="text-xs text-slate-500">${b.passenger_email}</p></td>
+                    <td class="p-6"><p class="text-sm font-black">${b.origin} → ${b.destination}</p></td>
+                    <td class="p-6"><p class="text-sm font-bold">${b.bus_code}</p></td>
+                    <td class="p-6"><p class="text-sm font-bold">Seat ${b.seat_number}</p></td>
+                    <td class="p-6"><p class="text-sm">${new Date(b.departure_time).toLocaleString()}</p></td>
+                    <td class="p-6"><p class="text-xs text-slate-500">${new Date(b.booking_time).toLocaleString()}</p></td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // Load bookings when bookings tab is clicked
+        document.getElementById('refresh-bookings').addEventListener('click', loadAllBookings);
+        
+        // Emergency backup: Add onclick directly to button in case event listeners don't work
+        setTimeout(() => {
+            const searchBtn = document.getElementById('search-btn');
+            if (searchBtn) {
+                // Override onclick to ensure it's called
+                searchBtn.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('🔴 Fallback onclick triggered');
+                    performPassengerSearch();
+                    return false;
+                };
+                console.log('✅ Fallback onclick handler added to search button');
+            }
+        }, 100);
     </script>
 </body>
 </html>

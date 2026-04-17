@@ -43,7 +43,6 @@ try {
                 st.bus_type,
                 st.capacity,
                 st.departure_time,
-                st.arrival_time,
                 st.fare,
                 s.available_seats,
                 (SELECT COUNT(*) FROM tickets t WHERE t.schedule_id = s.id) as booked_seats,
